@@ -18,4 +18,18 @@ spec:
         - name: ${SERVICE_NAME}
           image: ${IMAGE_NAME}:${IMAGE_VERSION}
           ports:
-            - containerPort: ${SERVICE_PORT}
+            - containerPort: ${CONTAINER_PORT}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${SERVICE_NAME}-service
+  labels:
+    app: ${SERVICE_NAME}
+spec:
+  selector:
+    app: ${SERVICE_NAME}
+  ports:
+    - port: ${SERVICE_PORT}
+      targetPort: ${CONTAINER_PORT}

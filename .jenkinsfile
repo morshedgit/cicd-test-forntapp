@@ -32,9 +32,14 @@ pipeline {
                         """
                         // Deploy the service
                         // Uncomment the following lines if needed
+
+                        def SERVICE_PORT="8080"
+                        def CONTAINER_PORT="80"
+
                         sh """
                         export SERVICE_NAME=cicd-frontend
-                        export SERVICE_PORT=3000
+                        export SERVICE_PORT=$SERVICE_PORT
+                        export CONTAINER_PORT=$CONTAINER_PORT
                         export IMAGE_NAME=cicd-test/frontend
                         export IMAGE_VERSION=$BUILD_NUMBER
                         export ENV=dev
@@ -49,14 +54,20 @@ pipeline {
                         sh """
                         . ~/.bashrc
                         export SERVICE_NAME=cicd-frontend
-                        export SERVICE_PORT=3000
+                        export SERVICE_PORT=$SERVICE_PORT
+                        export CONTAINER_PORT=$CONTAINER_PORT
                         export IMAGE_NAME=cicd-test/frontend
                         export IMAGE_VERSION=$BUILD_NUMBER
                         export ENV=dev
                         envsubst < deployment.yaml | kubectl apply -f -
                         """
+                        def SERVICE_NAME="cicd-frontend"
 
-                        sh "kubectl set image deployment/${env.SERVICE_NAME} ${env.SERVICE_NAME}=cicd-test/frontend:${env.BUILD_NUMBER}"                    
+                        sh """
+                        . ~/.bashrc
+                        export SERVICE_NAME=cicd-frontend
+                        kubectl set image deployment/$SERVICE_NAME $SERVICE_NAME=cicd-test/frontend:$BUILD_NUMBER
+                        """                    
                     // }
                 }
             }
