@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cicd-frontend
+  name: ${SERVICE_NAME}
   labels:
-    app: cicd-frontend
+    app: ${SERVICE_NAME}
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: cicd-frontend
+      app: ${SERVICE_NAME}
   template:
     metadata:
       labels:
-        app: cicd-frontend
+        app: ${SERVICE_NAME}
     spec:
       containers:
-        - name: cicd-frontend
+        - name: ${SERVICE_NAME}
           image: ${IMAGE_NAME}:${IMAGE_VERSION}
           ports:
             - containerPort: ${SERVICE_PORT}

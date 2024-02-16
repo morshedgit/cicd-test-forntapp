@@ -21,16 +21,43 @@ pipeline {
             steps {
                 script {
                     // Wrapping the Docker commands inside a script block
-                    docker.withRegistry('http://host.docker.internal:5000') {
                         
-                        def customImage = docker.build("cicd-test/frontend:$BUILD_NUMBER", "-f Dockerfile .")
-                        customImage.push()
-                        customImage.push("latest")                            
+                    // docker.withRegistry('http://host.docker.internal:5000') {
+                        // def customImage = docker.build("cicd-test/frontend:$BUILD_NUMBER", "-f Dockerfile .")
+                        // customImage.push()
+                        // customImage.push("latest")                            
+                        
+                        sh """
+                        docker build -t cicd-test/frontend:$BUILD_NUMBER -f Dockerfile .
+                        """
                         // Deploy the service
                         // Uncomment the following lines if needed
-                        sh "SERVICE_NAME=$service_name SERVICE_PORT=3000 IMAGE_NAME=cicd-test/frontend IMAGE_VERSION=$BUILD_NUMBER ENV=dev envsubst < deployment.yaml | kubectl apply -f -"
-                        // sh "kubectl set image deployment/${env.SERVICE_NAME} ${env.SERVICE_NAME}=cicd-test/frontend:${env.BUILD_NUMBER} -n ${env.NS}"                    
-                    }
+                        sh """
+                        export SERVICE_NAME=cicd-frontend
+                        export SERVICE_PORT=3000
+                        export IMAGE_NAME=cicd-test/frontend
+                        export IMAGE_VERSION=$BUILD_NUMBER
+                        export ENV=dev
+                        envsubst < deployment.yaml > processed-deployment.yaml
+                        cat processed-deployment.yaml
+                        """
+
+                        sh """
+                        minikube -p minikube image load cicd-test/frontend:$BUILD_NUMBER
+                        """
+
+                        sh """
+                        . ~/.bashrc
+                        export SERVICE_NAME=cicd-frontend
+                        export SERVICE_PORT=3000
+                        export IMAGE_NAME=cicd-test/frontend
+                        export IMAGE_VERSION=$BUILD_NUMBER
+                        export ENV=dev
+                        envsubst < deployment.yaml | kubectl apply -f -
+                        """
+
+                        sh "kubectl set image deployment/${env.SERVICE_NAME} ${env.SERVICE_NAME}=cicd-test/frontend:${env.BUILD_NUMBER}"                    
+                    // }
                 }
             }
         }
