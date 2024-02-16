@@ -1,6 +1,6 @@
 pipeline {
-    agent { label 'AWS' }
-    
+    agent any
+
     stages {
         stage('Preparation') { 
             steps {
@@ -8,7 +8,7 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/morshedgit/cicd-test-forntapp.git'
             }
         }
-        
+
         stage('Build') {
             environment {
                 // Define environment variables for the build
@@ -19,23 +19,26 @@ pipeline {
                 CONTENTFUL_PREVIEW_SECRET = "${env.CONTENTFUL_PREVIEW_SECRET}"
             }
             steps {
-                // Building the Docker image
                 script {
-                    def customImage = docker.build("nutu/dev/backend/nudge-cms:$BUILD_NUMBER", "-f Dockerfile .")
-                    customImage.push()
-                    customImage.push("latest")                            
+                    // Wrapping the Docker commands inside a script block
+                    docker.withRegistry('http://host.docker.internal:5000') {
+                        
+                        def customImage = docker.build("cicd-test/frontend:$BUILD_NUMBER", "-f Dockerfile .")
+                        customImage.push()
+                        customImage.push("latest")                            
+                        // Deploy the service
+                        // Uncomment the following lines if needed
+                        sh "SERVICE_NAME=$service_name SERVICE_PORT=3000 IMAGE_NAME=cicd-test/frontend IMAGE_VERSION=$BUILD_NUMBER ENV=dev envsubst < deployment.yaml | kubectl apply -f -"
+                        // sh "kubectl set image deployment/${env.SERVICE_NAME} ${env.SERVICE_NAME}=cicd-test/frontend:${env.BUILD_NUMBER} -n ${env.NS}"                    
+                    }
                 }
-                // Kubernetes deployment part commented out as per request
-                /*
-                sh "envsubst < ../kubernetes.yml | kubectl apply -f -"
-                sh "kubectl set image deployment/${env.SERVICE_NAME} ${env.SERVICE_NAME}=nutu/dev/backend/nudge-cms:${env.BUILD_NUMBER} -n ${env.NS}"
-                */
             }
         }
     }
     post {
         always {
             // Actions to perform after the pipeline runs, e.g., cleanup, notifications
+            sh 'echo POST ACTIONS'
         }
     }
 }
